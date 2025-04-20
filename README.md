@@ -38,24 +38,21 @@ dotnet test CryptoPriceFetcher.Tests
 ### 1. Bulkhead
 **Why:** Prevent one slow or failing API call from starving all threads in the application.
 **How it works:** Every fetch waits `await _semaphore.WaitAsync()` before proceeding and calls `_semaphore.Release()` when done. Extra requests queue up instead of overwhelming the client.
-**Verified in:** CryptoPriceFetcher.Tests/MarketDataServiceTests.GetLatestPricesAsync_RespectsBulkheadLimit
-- Fires three parallel calls, asserts only two ever run at once
+**Verified in:** CryptoPriceFetcher.Tests/MarketDataServiceTests.GetLatestPricesAsync_RespectsBulkheadLimit - Fires three parallel calls, asserts only two ever run at once
 
 ---
 
 ### 2. Retry with Exponential Back‑off
 **Why:** Smooth over transient network glitches or 5xx errors without immediately failing the user.
 **How it works:** On failure, the code waits 1 s, then 2 s, then 4 s, giving remote services time to recover. If all attempts fail, it bubbles the exception.
-**Verified in:** CryptoPriceFetcher.Tests.GetLatestPricesAsync_RetriesOnFailures
-- Simulates two failures, then success
+**Verified in:** CryptoPriceFetcher.Tests.GetLatestPricesAsync_RetriesOnFailures - Simulates two failures, then success
 
 ---
 
 ### 3. Circuit Breaker
 **Why:** Stop repeatedly hitting a downed service and fail fast, giving the remote API time to come back up.
 **How it works:** After three consecutive failures, the circuit opens for 30 seconds. During that period, any call immediately throws, avoiding unnecessary waits or retries.
-**Verified in:** CryptoPriceFetcher.Tests.GetLatestPricesAsync_TripsCircuitBreakerAfterFailures
-- Forces three consecutive failures, then checks the fourth call fast‑fails
+**Verified in:** CryptoPriceFetcher.Tests.GetLatestPricesAsync_TripsCircuitBreakerAfterFailures - Forces three consecutive failures, then checks the fourth call fast‑fails
 
 ---
 
